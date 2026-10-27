@@ -14,7 +14,8 @@ jobs:
   build-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4.2.2
 
       - name: Lint du Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
@@ -28,15 +29,13 @@ jobs:
       - name: Tests dans le conteneur
         run: docker run --rm ${{ env.IMAGE }}:ci python -m unittest -v
 
-      - name: Installer Trivy
-        run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.57.1
-
-      - name: Rapport Trivy (JSON)
-        run: trivy image --format json --output trivy-report.json --exit-code "0" ${{ env.IMAGE }}:ci
-
-      - name: Rapport Trivy (HTML)
-        run: trivy image --format template --template "@/contrib/html.tpl" --output trivy-report.html --exit-code "0" ${{ env.IMAGE }}:ci
+      - name: Scanner et generer le rapport Trivy (JSON)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: "${{ env.IMAGE }}:ci"
+          format: "json"
+          output: "trivy-report.json"
+          exit-code: "0"
 
       - name: Resume dans la page du run
         if: always()
@@ -47,12 +46,19 @@ jobs:
             echo "- $s : $n" >> "$GITHUB_STEP_SUMMARY"
           done
 
-      - name: Publier les rapports
+      - name: Publier le rapport JSON
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.1
         with:
-          name: trivy-reports
-          path: trivy-report.*
+          name: trivy-report
+          path: trivy-report.json
 
       - name: Quality gate (HIGH et CRITICAL)
-        run: trivy image --format table --severity HIGH,CRITICAL --vuln-type library --ignore-unfixed --exit-code "1" ${{ env.IMAGE }}:ci
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: "${{ env.IMAGE }}:ci"
+          format: "table"
+          severity: "HIGH,CRITICAL"
+          vuln-type: "library"
+          ignore-unfixed: true
+          exit-code: "1"
