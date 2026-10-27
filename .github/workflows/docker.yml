@@ -37,15 +37,6 @@ jobs:
           output: "trivy-report.json"
           exit-code: "0"
 
-      - name: Scanner et generer le rapport Trivy (HTML)
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: "${{ env.IMAGE }}:ci"
-          format: "template"
-          template: "@/contrib/html.tpl"
-          output: "trivy-report.html"
-          exit-code: "0"
-
       - name: Resume dans la page du run
         if: always()
         run: |
@@ -55,12 +46,12 @@ jobs:
             echo "- $s : $n" >> "$GITHUB_STEP_SUMMARY"
           done
 
-      - name: Publier les rapports
+      - name: Publier le rapport JSON
         if: always()
         uses: actions/upload-artifact@v4.6.1
         with:
-          name: trivy-reports
-          path: trivy-report.*
+          name: trivy-report
+          path: trivy-report.json
 
       - name: Quality gate (HIGH et CRITICAL)
         uses: aquasecurity/trivy-action@v0.36.0
