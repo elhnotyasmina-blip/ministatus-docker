@@ -23,7 +23,7 @@ jobs:
           failure-threshold: warning
 
       - name: Build de l'image
-        run: docker build --build-arg APP_VERSION=ci -t ${{ env.IMAGE }}:ci
+        run: docker build --build-arg APP_VERSION=ci -t ${{ env.IMAGE }}:ci .
 
       - name: Tests dans le conteneur
         run: docker run --rm ${{ env.IMAGE }}:ci python -m unittest -v
